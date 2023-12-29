@@ -13,9 +13,8 @@ APlayerCharacter::APlayerCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 180.f;
+	CameraBoom->TargetArmLength = 400.f;
 	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->SocketOffset = FVector(0.f, 50.f, 70.f);
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>("FollowCamera");
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -23,11 +22,11 @@ APlayerCharacter::APlayerCharacter()
 
 	//Dont Rotate when the controller rotate, let the controller only affect the camera
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
 	//Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = false; //Character moves in the direction of input
+	GetCharacterMovement()->bOrientRotationToMovement = true; //Character moves in the direction of input
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f); //... at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
@@ -66,13 +65,17 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
-	const FVector2D MovementVector = Value.Get<FVector2D>();
-	const FVector Forward = GetActorForwardVector();
-	AddMovementInput(Forward, MovementVector.Y);
-	const FVector Right = GetActorRightVector();
-	AddMovementInput(Right, MovementVector.X);
-}
+	FRotator ControlRot = GetControlRotation();
+	ControlRot.Pitch = 0.0f;
+	ControlRot.Roll = 0.0f;
 
+	const FVector2D AxisValue = Value.Get<FVector2D>();
+
+	AddMovementInput(ControlRot.Vector(), AxisValue.Y);
+
+	const FVector RightVector = FRotationMatrix(ControlRot).GetScaledAxis(EAxis::Y);
+	AddMovementInput(RightVector, AxisValue.X);
+}
 
 void APlayerCharacter::Look(const FInputActionValue& Value)
 {
