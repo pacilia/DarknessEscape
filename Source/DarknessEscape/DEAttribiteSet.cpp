@@ -2,4 +2,8 @@
 
 
 #include "DEAttribiteSet.h"
+UDEAttribiteSet::UDEAttribiteSet()
+{
+
+}
 
