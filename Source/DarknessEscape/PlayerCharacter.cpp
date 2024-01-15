@@ -41,6 +41,12 @@ void APlayerCharacter::BeginPlay()
 			Subsystem->AddMappingContext(ShooterMappingContext, 0);
 		}
 	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &APlayerCharacter::HandleOnMontageNotifyBegin);
+	}
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
@@ -58,8 +64,25 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Jump);
+		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::LightAttack);
+		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::HeavyAttack);
 	}
 
+}
+
+void APlayerCharacter::HandleOnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPayload)
+{
+	//Decrement combo index
+	AttackComboIndex--;
+
+	if (AttackComboIndex < 0)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Stop(0.4f, LightAttackMontage);
+		}
+	}
 }
 
 
@@ -90,5 +113,47 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 void APlayerCharacter::Jump()
 {
 	Super::Jump();
+}
+
+void APlayerCharacter::LightAttack()
+{
+	if (!IsAttacking() && !GetCharacterMovement()->IsFalling())
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if(LightAttackMontage)
+		{
+			AnimInstance->Montage_Play(LightAttackMontage);
+		}
+	}
+	else
+	{
+		AttackComboIndex = 1;
+	}
+}
+
+void APlayerCharacter::HeavyAttack()
+{
+	if (!IsAttacking() && !GetCharacterMovement()->IsFalling())
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (LightAttackMontage)
+		{
+			AnimInstance->Montage_Play(HeavyAttackMontage);
+		}
+	}
+}
+
+bool APlayerCharacter::IsAttacking()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		if (AnimInstance->Montage_IsPlaying(LightAttackMontage) || AnimInstance->Montage_IsPlaying(HeavyAttackMontage))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
