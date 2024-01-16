@@ -50,6 +50,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* HeavyAttackAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RollAction;
+
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
@@ -62,6 +65,7 @@ protected:
 
 	bool IsAttacking();
 
+	void Roll();
 	
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -82,6 +86,9 @@ private:
 	UAnimMontage* HeavyAttackMontage;
 
 	int32 AttackComboIndex = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* RollMontage;
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; };
 

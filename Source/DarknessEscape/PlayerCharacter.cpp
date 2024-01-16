@@ -66,6 +66,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Jump);
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::LightAttack);
 		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::HeavyAttack);
+		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
 	}
 
 }
@@ -146,7 +147,7 @@ void APlayerCharacter::HeavyAttack()
 bool APlayerCharacter::IsAttacking()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	if (AnimInstance && LightAttackMontage && HeavyAttackMontage)
 	{
 		if (AnimInstance->Montage_IsPlaying(LightAttackMontage) || AnimInstance->Montage_IsPlaying(HeavyAttackMontage))
 		{
@@ -155,5 +156,16 @@ bool APlayerCharacter::IsAttacking()
 	}
 
 	return false;
+}
+
+void APlayerCharacter::Roll()
+{
+	if (IsAttacking() && GetCharacterMovement()->IsFalling()) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && RollMontage)
+	{
+		AnimInstance->Montage_Play(RollMontage);
+	}
 }
 
