@@ -8,7 +8,12 @@
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-APlayerCharacter::APlayerCharacter()
+APlayerCharacter::APlayerCharacter() :
+	CombatState(ECombatState::ECS_Unoccupied),
+	RollCooldown(3.f),
+	HeavyAttackCooldown(4.f),
+	bHeavyAttackOnCooldown(false),
+	bRollIsOnCooldown(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
@@ -42,7 +47,7 @@ void APlayerCharacter::BeginPlay()
 		}
 	}
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
 		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &APlayerCharacter::HandleOnMontageNotifyBegin);
@@ -52,7 +57,6 @@ void APlayerCharacter::BeginPlay()
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -66,7 +70,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Jump);
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::LightAttack);
 		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::HeavyAttack);
-		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
+		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollButtonPressed);
 	}
 
 }
@@ -78,10 +82,10 @@ void APlayerCharacter::HandleOnMontageNotifyBegin(FName NotifyName, const FBranc
 
 	if (AttackComboIndex < 0)
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
 			AnimInstance->Montage_Stop(0.4f, LightAttackMontage);
+			FinishLightAttack();
 		}
 	}
 }
@@ -118,54 +122,133 @@ void APlayerCharacter::Jump()
 
 void APlayerCharacter::LightAttack()
 {
-	if (!IsAttacking() && !GetCharacterMovement()->IsFalling())
+	if (!GetCharacterMovement()->IsFalling() && !IsLightAttacking())
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if(LightAttackMontage)
-		{
-			AnimInstance->Montage_Play(LightAttackMontage);
-		}
+		CombatState = ECombatState::ECS_LightAttacking;
+		PlayLightAttackMontage();
 	}
-	else
+	else 
 	{
 		AttackComboIndex = 1;
 	}
 }
 
-void APlayerCharacter::HeavyAttack()
+bool APlayerCharacter::IsLightAttacking()
 {
-	if (!IsAttacking() && !GetCharacterMovement()->IsFalling())
+	if (AnimInstance && LightAttackMontage)
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (LightAttackMontage)
-		{
-			AnimInstance->Montage_Play(HeavyAttackMontage);
-		}
-	}
-}
-
-bool APlayerCharacter::IsAttacking()
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && LightAttackMontage && HeavyAttackMontage)
-	{
-		if (AnimInstance->Montage_IsPlaying(LightAttackMontage) || AnimInstance->Montage_IsPlaying(HeavyAttackMontage))
+		if (AnimInstance->Montage_IsPlaying(LightAttackMontage))
 		{
 			return true;
 		}
 	}
-
 	return false;
+}
+
+
+void APlayerCharacter::HeavyAttack()
+{
+	if ((CombatState != ECombatState::ECS_Unoccupied) || GetCharacterMovement()->IsFalling()) return;
+	if (bHeavyAttackOnCooldown) return;
+	CombatState = ECombatState::ECS_HeavyAttacking;
+	bHeavyAttackOnCooldown = true;
+	PlayHeavyAttackMontage();
+	SetHeavyAttackTimer();
+}
+
+void APlayerCharacter::SetHeavyAttackTimer()
+{
+	GetWorldTimerManager().SetTimer(
+		HeavyAttackTimer,
+		this, 
+		&APlayerCharacter::SetHeavyAttackOnCooldown, 
+		HeavyAttackCooldownTimeScale());
+}
+
+void APlayerCharacter::SetHeavyAttackOnCooldown()
+{
+	bHeavyAttackOnCooldown = false;
+}
+
+void APlayerCharacter::PlayLightAttackMontage()
+{
+	if(AnimInstance && LightAttackMontage)
+	{
+		AnimInstance->Montage_Play(LightAttackMontage);
+	}
+}
+
+void APlayerCharacter::PlayHeavyAttackMontage()
+{
+	if (AnimInstance && HeavyAttackMontage)
+	{
+		AnimInstance->Montage_Play(HeavyAttackMontage);
+	}
+}
+
+void APlayerCharacter::RollButtonPressed()
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		Roll();
+	}
+}
+
+void APlayerCharacter::FinishLightAttack()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
+}
+
+void APlayerCharacter::FinishHeavyAttack()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
 }
 
 void APlayerCharacter::Roll()
 {
-	if (IsAttacking() && GetCharacterMovement()->IsFalling()) return;
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (bRollIsOnCooldown) return;
+	CombatState = ECombatState::ECS_Rolling;
+
+	bRollIsOnCooldown = true;
+
 	if (AnimInstance && RollMontage)
 	{
 		AnimInstance->Montage_Play(RollMontage);
 	}
+	StartRollTimer();
 }
 
+void APlayerCharacter::StartRollTimer()
+{
+	CombatState = ECombatState::ECS_Rolling;
+	GetWorldTimerManager().SetTimer(
+		RollTimer, 
+		this, 
+		&APlayerCharacter::SetRollOnCooldown, 
+		RollCooldownTimeScale());
+}
+
+
+void APlayerCharacter::FinishRoll()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
+}
+
+void APlayerCharacter::SetRollOnCooldown()
+{
+	bRollIsOnCooldown = false;
+}
+
+float APlayerCharacter::RollCooldownTimeScale()
+{
+	//TODO: Scale roll cooldown with dexterity
+	return RollCooldown;
+}
+
+float APlayerCharacter::HeavyAttackCooldownTimeScale()
+{
+	//TODO: Scale heavy attack cool down with dexterity
+	return HeavyAttackCooldown;
+}
