@@ -71,6 +71,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::LightAttack);
 		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::HeavyAttack);
 		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollButtonPressed);
+		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Triggered, this, &APlayerCharacter::BlockButtonPressed);
+		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerCharacter::BlockButtonReleased);
 	}
 
 }
@@ -117,6 +119,7 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Jump()
 {
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
 	Super::Jump();
 }
 
@@ -251,4 +254,45 @@ float APlayerCharacter::HeavyAttackCooldownTimeScale()
 {
 	//TODO: Scale heavy attack cool down with dexterity
 	return HeavyAttackCooldown;
+}
+
+void APlayerCharacter::BlockButtonPressed()
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		Block();
+	}
+}
+
+void APlayerCharacter::BlockButtonReleased()
+{
+	if (CombatState != ECombatState::ECC_Blocking) return;
+
+	EndBlock();
+}
+
+void APlayerCharacter::Block()
+{
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
+
+	CombatState = ECombatState::ECC_Blocking;
+
+	if (AnimInstance && RollMontage)
+	{
+		AnimInstance->Montage_Play(BlockMontage);
+		AnimInstance->Montage_JumpToSection(FName("Blocking"));
+	}
+}
+
+void APlayerCharacter::EndBlock()
+{
+	if (AnimInstance && RollMontage)
+	{
+		AnimInstance->Montage_Play(BlockToIdleMontage);
+	}
+}
+
+void APlayerCharacter::FinishBlocking()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
 }

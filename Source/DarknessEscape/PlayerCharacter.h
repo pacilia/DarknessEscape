@@ -20,6 +20,7 @@ enum class ECombatState : uint8
 	ECS_HeavyAttacking UMETA(DisplayName = "HeavyAttacking"),
 	ECS_Equipping UMETA(DisplayName = "Equipping"),
 	ECS_Rolling UMETA(DisplayName = "Rolling"),
+	ECC_Blocking UMETA(DisplayName = "Blocking"),
 	ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
@@ -54,6 +55,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* RollAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* BlockAction;
 
 	void Move(const FInputActionValue& Value);
 
@@ -95,6 +99,17 @@ protected:
 	void PlayLightAttackMontage();
 
 	void PlayHeavyAttackMontage();
+
+	void BlockButtonPressed();
+
+	void BlockButtonReleased();
+
+	void Block();
+
+	void EndBlock();
+
+	UFUNCTION(BlueprintCallable)
+	void FinishBlocking();
 public:	
 	virtual void Tick(float DeltaTime) override;
 
@@ -139,6 +154,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	ECombatState CombatState;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* BlockMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* BlockToIdleMontage;
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; };
 
