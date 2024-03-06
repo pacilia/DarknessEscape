@@ -7,13 +7,24 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Weapon.h"
+#include "Item.h"
+#include "Components/WidgetComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 APlayerCharacter::APlayerCharacter() :
 	CombatState(ECombatState::ECS_Unoccupied),
 	RollCooldown(3.f),
 	HeavyAttackCooldown(4.f),
 	bHeavyAttackOnCooldown(false),
-	bRollIsOnCooldown(false)
+	bRollIsOnCooldown(false),
+	bShouldTraceForItems(false),
+	bShouldPlayPickupSound(true),
+	bShouldPlayEquipSound(true),
+	PickupSoundResetTime(0.2f),
+	EquipSoundResetTime(0.2f)
+
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
@@ -52,11 +63,16 @@ void APlayerCharacter::BeginPlay()
 	{
 		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &APlayerCharacter::HandleOnMontageNotifyBegin);
 	}
+
+	EquipWeapon(SpawnDefaultWeapon());
+	EquippedWeapon->SetCharacter(this);
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	TraceForItem();
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -73,6 +89,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollButtonPressed);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Triggered, this, &APlayerCharacter::BlockButtonPressed);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerCharacter::BlockButtonReleased);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacter::InteractButtonPressed);
 	}
 
 }
@@ -278,7 +295,7 @@ void APlayerCharacter::Block()
 	CombatState = ECombatState::ECC_Blocking;
 
 	if (AnimInstance && RollMontage)
-	{
+	{ 
 		AnimInstance->Montage_Play(BlockMontage);
 		AnimInstance->Montage_JumpToSection(FName("Blocking"));
 	}
@@ -296,3 +313,192 @@ void APlayerCharacter::FinishBlocking()
 {
 	CombatState = ECombatState::ECS_Unoccupied;
 }
+
+void APlayerCharacter::InteractButtonPressed()
+{
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
+	if (TraceHitItem)
+	{
+		GetPickupItem(TraceHitItem);
+		TraceHitItem = nullptr;
+	}
+
+}
+
+bool APlayerCharacter::TraceUnderCrosshair(FHitResult& OutHitResult, FVector& OutHitLocation)
+{
+	//Get viewport size 
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+
+	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(this, 0),
+		CrosshairLocation,
+		CrosshairWorldPosition,
+		CrosshairWorldDirection);
+
+	if (bScreenToWorld)
+	{
+		//Trace from crosshair world location outward
+		const FVector Start{ CrosshairWorldPosition };
+		const FVector End{ Start + CrosshairWorldDirection * 50000.f };
+		OutHitLocation = End;
+		GetWorld()->LineTraceSingleByChannel(OutHitResult, Start, End, ECollisionChannel::ECC_Visibility);
+		if (OutHitResult.bBlockingHit)
+		{
+			OutHitLocation = OutHitResult.Location;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void APlayerCharacter::TraceForItem()
+{
+	if (bShouldTraceForItems)
+	{
+		FHitResult ItemTraceResult;
+		FVector HitLocation;
+		TraceUnderCrosshair(ItemTraceResult, HitLocation);
+		if (ItemTraceResult.bBlockingHit)
+		{
+			TraceHitItem = Cast<AItem>(ItemTraceResult.GetActor());
+			const auto TraceHitWeapon = Cast<AWeapon>(TraceHitItem);
+
+			if (TraceHitItem && TraceHitItem->GetPickupWidget())
+			{
+				TraceHitItem->GetPickupWidget()->SetVisibility(true);
+			}
+
+			//We hit an AItem last frame
+			if (TraceHitItemLastFrame)
+			{
+				if (TraceHitItem != TraceHitItemLastFrame)
+				{
+					//We are hitting a difference AItem this frame from last frame or AItem is null
+					TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(false);
+				}
+			}
+
+			//Store a reference to HitItem for next frame
+			TraceHitItemLastFrame = TraceHitItem;
+		}
+	}
+	else if (TraceHitItemLastFrame)
+	{
+		//No longer overlapping any items, 
+		//Item last frame should not show widget
+		TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(false);
+	}
+}
+
+void APlayerCharacter::IncrementOverlappedItemCount(int8 Amount)
+{
+	if (OverlappedItemCount + Amount <= 0)
+	{
+		OverlappedItemCount = 0;
+		bShouldTraceForItems = false;
+	}
+	else
+	{
+		OverlappedItemCount += Amount;
+		bShouldTraceForItems = true;
+	}
+}
+
+void APlayerCharacter::EquipWeapon(AWeapon* WeaponToEquip, bool bSwapping)
+{
+	if (WeaponToEquip)
+	{
+		const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(FName("RightHandSocket"));
+		if (HandSocket)
+		{
+			HandSocket->AttachActor(WeaponToEquip, GetMesh());
+		}
+
+		EquippedWeapon = WeaponToEquip;
+
+		EquippedWeapon->SetItemState(EItemState::EIS_Equipped);
+	}
+}
+
+void APlayerCharacter::DropWeapon()
+{
+	if (EquippedWeapon)
+	{
+		FDetachmentTransformRules DetachmentTransformRules(EDetachmentRule::KeepWorld, true);
+		EquippedWeapon->GetItemMesh()->DetachFromComponent(DetachmentTransformRules);
+
+		EquippedWeapon->SetItemState(EItemState::EIS_Falling);
+		EquippedWeapon->ThrowWeapon();
+	}
+}
+
+void APlayerCharacter::SwapWeapon(AWeapon* WeaponToSwap)
+{
+	DropWeapon();
+	EquipWeapon(WeaponToSwap, true);
+	TraceHitItem = nullptr;
+	TraceHitItemLastFrame = nullptr;
+}
+
+void APlayerCharacter::GetPickupItem(AItem* Item)
+{
+
+	if (Item)
+	{
+		Item->SetCharacter(this);
+		Item->PlayPickupSound();
+	}
+
+
+	auto Weapon = Cast<AWeapon>(Item);
+	if (Weapon)
+	{
+		SwapWeapon(Weapon);
+	}
+}
+
+AWeapon* APlayerCharacter::SpawnDefaultWeapon()
+{
+	if (DefaultWeaponClass)
+	{
+		return GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass);
+	}
+
+	return nullptr;
+}
+
+void APlayerCharacter::ResetPickupSoundTimer()
+{
+	bShouldPlayPickupSound = true;
+}
+
+void APlayerCharacter::ResetEquipSoundTimer()
+{
+	bShouldPlayEquipSound = true;
+}
+
+
+void APlayerCharacter::StartPickupSoundTimer()
+{
+	bShouldPlayPickupSound = false;
+	GetWorldTimerManager().SetTimer(PickupSoundTimer, this, &APlayerCharacter::ResetPickupSoundTimer, PickupSoundResetTime);
+}
+
+void APlayerCharacter::StartEquipSoundTimer()
+{
+	bShouldPlayEquipSound = false;
+	GetWorldTimerManager().SetTimer(EquipSoundTimer, this, &APlayerCharacter::ResetEquipSoundTimer, EquipSoundResetTime);
+}
+
+
+

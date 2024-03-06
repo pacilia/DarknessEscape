@@ -11,6 +11,8 @@ class UInputMappingContext;
 class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
+class AItem;
+class AWeapon;
 
 UENUM()
 enum class ECombatState : uint8
@@ -59,6 +61,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* BlockAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* InteractAction;
+
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
@@ -78,6 +83,8 @@ protected:
 	void Roll();
 
 	void RollButtonPressed();
+
+	void InteractButtonPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void FinishRoll();
@@ -110,6 +117,20 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void FinishBlocking();
+
+	bool TraceUnderCrosshair(FHitResult& OutHitResult, FVector& OutHitLocation);
+
+	void TraceForItem();
+
+	void EquipWeapon(AWeapon* WeaponToEquip, bool bSwapping = false);
+
+	void DropWeapon();
+
+	void SwapWeapon(AWeapon* WeaponToSwap);
+
+	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FHitResult& OutHitResult);
+
+	AWeapon* APlayerCharacter::SpawnDefaultWeapon();
 public:	
 	virtual void Tick(float DeltaTime) override;
 
@@ -160,6 +181,41 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* BlockToIdleMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	bool bShouldTraceForItems;
+
+	int8 OverlappedItemCount;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	AItem* TraceHitItem;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item", meta = (AllowPrivateAccess = "true"))
+	AItem* TraceHitItemLastFrame;
+	
+	bool bShouldPlayPickupSound;
+
+	bool bShouldPlayEquipSound;
+
+	FTimerHandle PickupSoundTimer;
+
+	FTimerHandle EquipSoundTimer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item, meta = (AllowPrivateAccess = "true"))
+	float PickupSoundResetTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item, meta = (AllowPrivateAccess = "true"))
+	float EquipSoundResetTime;
+
+	void ResetPickupSoundTimer();
+
+	void ResetEquipSoundTimer();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AWeapon> DefaultWeaponClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	AWeapon* EquippedWeapon;
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; };
 
@@ -171,4 +227,16 @@ public:
 
 	UFUNCTION()
 	void HandleOnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPayload);
+
+	void IncrementOverlappedItemCount(int8 Amount);
+
+	FORCEINLINE bool ShouldPlayPickupSound() const { return bShouldPlayPickupSound; }
+
+	FORCEINLINE bool ShouldPlayEquipSound() const { return bShouldPlayEquipSound; }
+
+	void StartPickupSoundTimer();
+
+	void StartEquipSoundTimer();
+
+	void GetPickupItem(AItem* Item);
 };
