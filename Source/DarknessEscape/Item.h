@@ -31,6 +31,7 @@ UENUM(BlueprintType)
 enum class EItemType : uint8
 {
 	EIT_Weapon UMETA(DisplayName = "Weapon"),
+	EIT_Shield UMETA(DisplayName = "Shield"),
 	EIT_Potion UMETA(DisplayName = "Potion"),
 
 	EIT_MAX UMETA(DisplayName = "DefaultMAX")
@@ -103,6 +104,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	UTexture2D* IconItem;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	FVector ItemInterpStartLocation;
 public:
 	FORCEINLINE UWidgetComponent* GetPickupWidget() const { return PickupWidget; }
 
@@ -133,4 +137,6 @@ public:
 	FORCEINLINE void SetItemIcon(UTexture2D* Icon) { IconItem = Icon; }
 
 	void PlayEquipSound();
+
+	void SwapEquippedItemLocation(FVector Location);
 };

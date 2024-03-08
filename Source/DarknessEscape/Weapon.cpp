@@ -2,16 +2,18 @@
 
 
 #include "Weapon.h"
-
+#include "Math/Vector.h"
 AWeapon::AWeapon() :
 	ThrowWeaponTime(0.7f),
 	bFalling(false),
-	WeaponType(EWeaponType::EWT_Sword)
+	WeaponType(EWeaponType::EWT_BlackKnight)
 {
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void AWeapon::Tick(float DeltaTime)
 {
+	Super::Tick(DeltaTime);
 	if (GetItemState() == EItemState::EIS_Falling && bFalling)
 	{
 		const FRotator MeshRotation{ 0.f, GetItemMesh()->GetComponentRotation().Yaw, 0.f };
@@ -27,12 +29,11 @@ void AWeapon::ThrowWeapon()
 	const FVector MeshForward{ GetItemMesh()->GetForwardVector() };
 	const FVector MeshRight{ GetItemMesh()->GetRightVector() };
 	FVector ImpulseDirection = MeshRight.RotateAngleAxis(-20.f, MeshForward);
-
 	float RandomRotation{ FMath::FRandRange(30.f, 60.f) };
 	ImpulseDirection = ImpulseDirection.RotateAngleAxis(RandomRotation, FVector(0.f, 0.f, 1.f));
 	ImpulseDirection *= 200.f;
+	UE_LOG(LogTemp, Warning, TEXT("Actor location: %s"), *GetItemMesh()->GetComponentLocation().ToString());
 	GetItemMesh()->AddImpulse(ImpulseDirection);
-
 	bFalling = true;
 	GetWorldTimerManager().SetTimer(ThrowWeaponTimer, this, &AWeapon::StopFalling, ThrowWeaponTime);
 }
@@ -54,20 +55,20 @@ void AWeapon::OnConstruction(const FTransform& Transform)
 		FWeaponDataTable* WeaponDataRow = nullptr;
 		switch (WeaponType)
 		{
-		case EWeaponType::EWT_Sword:
-			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("Sword"), TEXT(""));
+		case EWeaponType::EWT_BlackKnight:
+			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("BlackKnight"), TEXT(""));
 			break;
 
-		case EWeaponType::EWT_Axe:
-			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("Axe"), TEXT(""));
+		case EWeaponType::EWT_DragonSword:
+			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("DragonSword"), TEXT(""));
 			break;
 
-		case EWeaponType::EWT_Dagger:
-			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("Dagger"), TEXT(""));
+		case EWeaponType::EWT_HeroSword:
+			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("HeroSword"), TEXT(""));
 			break;
 
-		case EWeaponType::EWT_Mace:
-			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("Mace"), TEXT(""));
+		case EWeaponType::EWT_IceBlade:
+			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("IceBlade"), TEXT(""));
 			break;
 		}
 

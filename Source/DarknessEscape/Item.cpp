@@ -7,6 +7,7 @@
 #include "Sound/SoundCue.h"
 #include "Kismet/GameplayStatics.h"
 #include "Curves/CurveVector.h"
+
 // Sets default values
 AItem::AItem() :
 	ItemName(FString("Default")),
@@ -189,3 +190,7 @@ void AItem::PlayEquipSound()
 	}
 }
 
+void AItem::SwapEquippedItemLocation(FVector Location)
+{
+	SetActorLocation(Location, true, nullptr, ETeleportType::TeleportPhysics);
+}

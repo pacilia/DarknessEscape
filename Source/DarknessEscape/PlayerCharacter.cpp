@@ -319,6 +319,7 @@ void APlayerCharacter::InteractButtonPressed()
 	if (CombatState != ECombatState::ECS_Unoccupied) return;
 	if (TraceHitItem)
 	{
+		EquippedWeapon->SwapEquippedItemLocation(TraceHitItem->GetActorLocation());
 		GetPickupItem(TraceHitItem);
 		TraceHitItem = nullptr;
 	}

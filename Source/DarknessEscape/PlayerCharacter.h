@@ -128,8 +128,6 @@ protected:
 
 	void SwapWeapon(AWeapon* WeaponToSwap);
 
-	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FHitResult& OutHitResult);
-
 	AWeapon* APlayerCharacter::SpawnDefaultWeapon();
 public:	
 	virtual void Tick(float DeltaTime) override;

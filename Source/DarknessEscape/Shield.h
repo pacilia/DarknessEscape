@@ -4,16 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Item.h"
-#include "WeaponType.h"
+#include "ShieldType.h"
 #include "Engine/DataTable.h"
-#include "Weapon.generated.h"
+#include "Shield.generated.h"
 
 class USoundCue;
 class UWidgetComponent;
 class UParticleSystem;
 
 USTRUCT(BlueprintType)
-struct FWeaponDataTable : public FTableRowBase
+struct FShieldDataTable : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -36,21 +36,21 @@ struct FWeaponDataTable : public FTableRowBase
 	UTexture2D* InventoryIcon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundCue* SwingSound;
+	USoundCue* BlockSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Damage;
+	float Defense;
 };
 
 
 UCLASS()
-class DARKNESSESCAPE_API AWeapon : public AItem
+class DARKNESSESCAPE_API AShield : public AItem
 {
 	GENERATED_BODY()
-	
+
 public:
-	AWeapon();
-	
+	AShield();
+
 	virtual void Tick(float DeltaTime) override;
 
 protected:
@@ -59,29 +59,29 @@ protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 private:
-	FTimerHandle ThrowWeaponTimer;
+	FTimerHandle ThrowShieldTimer;
 
-	float ThrowWeaponTime;
+	float ThrowShieldTime;
 
 	bool bFalling;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-	EWeaponType WeaponType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield Properties", meta = (AllowPrivateAccess = "true"))
+	EShieldType ShieldType;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
-	UDataTable* WeaponDataTable;
+	UDataTable* ShieldDataTable;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
-	USoundCue* SwingSound;
+	USoundCue* BlockSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-	float Damage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield Properties", meta = (AllowPrivateAccess = "true"))
+	float Defense;
 public:
-	void ThrowWeapon();
+	void ThrowShield();
 
-	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE EShieldType GetShieldType() const { return ShieldType; }
 
-	FORCEINLINE USoundCue* GetSwingSound() const { return SwingSound; }
+	FORCEINLINE USoundCue* GetSwingSound() const { return BlockSound; }
 
-	FORCEINLINE float GetDamage() const { return Damage; }
+	FORCEINLINE float GetDefense() const { return Defense; }
 };
