@@ -81,7 +81,7 @@ public:
 
 	FORCEINLINE EShieldType GetShieldType() const { return ShieldType; }
 
-	FORCEINLINE USoundCue* GetSwingSound() const { return BlockSound; }
+	FORCEINLINE USoundCue* GetBlockSound() const { return BlockSound; }
 
 	FORCEINLINE float GetDefense() const { return Defense; }
 };

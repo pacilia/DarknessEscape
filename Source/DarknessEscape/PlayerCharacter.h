@@ -13,6 +13,11 @@ class USpringArmComponent;
 class UCameraComponent;
 class AItem;
 class AWeapon;
+class AShield;
+class USoundCue;
+class UParticleSystem;
+class USoundCue;
+class UParticleSystem;
 
 UENUM()
 enum class ECombatState : uint8
@@ -129,6 +134,17 @@ protected:
 	void SwapWeapon(AWeapon* WeaponToSwap);
 
 	AWeapon* APlayerCharacter::SpawnDefaultWeapon();
+
+	void EquipShield(AShield* ShieldToEquip, bool bSwapping = false);
+
+	void DropShield();
+
+	void SwapShield(AShield* ShieldToSwap);
+
+	AShield* APlayerCharacter::SpawnDefaultShield();
+
+	UFUNCTION(BlueprintCallable)
+	EPhysicalSurface GetSurfaceType();
 public:	
 	virtual void Tick(float DeltaTime) override;
 
@@ -214,6 +230,21 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	AWeapon* EquippedWeapon;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AShield> DefaultShieldClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	AShield* EquippedShield;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	float StunChance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* BloodParticle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	USoundCue* MeleeImpactSound;
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; };
 
@@ -237,4 +268,12 @@ public:
 	void StartEquipSoundTimer();
 
 	void GetPickupItem(AItem* Item);
+
+	FORCEINLINE UParticleSystem* GetBloodParticle() const { return BloodParticle; }
+
+	FORCEINLINE USoundCue* GetMeleeImpactSound() const { return MeleeImpactSound; }
+
+	void Stun();
+
+	FORCEINLINE float GetStunChance() const { return StunChance; }
 };

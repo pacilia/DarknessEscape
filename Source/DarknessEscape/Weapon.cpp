@@ -79,7 +79,6 @@ void AWeapon::OnConstruction(const FTransform& Transform)
 			GetItemMesh()->SetSkeletalMesh(WeaponDataRow->ItemMesh);
 			SetItemName(WeaponDataRow->ItemName);
 			SetItemIcon(WeaponDataRow->InventoryIcon);
-
 			Damage = WeaponDataRow->Damage;
 		}
 	}

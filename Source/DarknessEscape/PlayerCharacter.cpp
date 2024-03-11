@@ -10,8 +10,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Weapon.h"
 #include "Item.h"
+#include "Shield.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Sound/SoundCue.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 APlayerCharacter::APlayerCharacter() :
 	CombatState(ECombatState::ECS_Unoccupied),
@@ -23,8 +26,8 @@ APlayerCharacter::APlayerCharacter() :
 	bShouldPlayPickupSound(true),
 	bShouldPlayEquipSound(true),
 	PickupSoundResetTime(0.2f),
-	EquipSoundResetTime(0.2f)
-
+	EquipSoundResetTime(0.2f),
+	StunChance(.25f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
@@ -66,6 +69,9 @@ void APlayerCharacter::BeginPlay()
 
 	EquipWeapon(SpawnDefaultWeapon());
 	EquippedWeapon->SetCharacter(this);
+
+	EquipShield(SpawnDefaultShield());
+	EquippedShield->SetCharacter(this);
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
@@ -319,7 +325,20 @@ void APlayerCharacter::InteractButtonPressed()
 	if (CombatState != ECombatState::ECS_Unoccupied) return;
 	if (TraceHitItem)
 	{
-		EquippedWeapon->SwapEquippedItemLocation(TraceHitItem->GetActorLocation());
+		AWeapon* Weapon = Cast<AWeapon>(TraceHitItem);
+		AShield* Shield = Cast<AShield>(TraceHitItem);
+		if (Weapon)
+		{
+			EquippedWeapon->SwapEquippedItemLocation(TraceHitItem->GetActorLocation());
+		}
+		else if (Shield)
+		{
+			EquippedShield->SwapEquippedItemLocation(TraceHitItem->GetActorLocation());
+			
+		}
+		else {
+			//Other item
+		}
 		GetPickupItem(TraceHitItem);
 		TraceHitItem = nullptr;
 	}
@@ -372,7 +391,6 @@ void APlayerCharacter::TraceForItem()
 		if (ItemTraceResult.bBlockingHit)
 		{
 			TraceHitItem = Cast<AItem>(ItemTraceResult.GetActor());
-			const auto TraceHitWeapon = Cast<AWeapon>(TraceHitItem);
 
 			if (TraceHitItem && TraceHitItem->GetPickupWidget())
 			{
@@ -466,7 +484,14 @@ void APlayerCharacter::GetPickupItem(AItem* Item)
 	{
 		SwapWeapon(Weapon);
 	}
+
+	auto Shield = Cast<AShield>(Item);
+	if (Shield)
+	{
+		SwapShield(Shield);
+	}
 }
+
 
 AWeapon* APlayerCharacter::SpawnDefaultWeapon()
 {
@@ -476,6 +501,67 @@ AWeapon* APlayerCharacter::SpawnDefaultWeapon()
 	}
 
 	return nullptr;
+}
+
+
+void APlayerCharacter::EquipShield(AShield* ShieldToEquip, bool bSwapping)
+{
+	if (ShieldToEquip)
+	{
+		const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(FName("LeftHandSocket"));
+		if (HandSocket)
+		{
+			HandSocket->AttachActor(ShieldToEquip, GetMesh());
+		}
+
+		EquippedShield = ShieldToEquip;
+
+		EquippedShield->SetItemState(EItemState::EIS_Equipped);
+	}
+}
+
+
+void APlayerCharacter::DropShield()
+{
+	if (EquippedShield)
+	{
+		FDetachmentTransformRules DetachmentTransformRules(EDetachmentRule::KeepWorld, true);
+		EquippedShield->GetItemMesh()->DetachFromComponent(DetachmentTransformRules);
+
+		EquippedShield->SetItemState(EItemState::EIS_Falling);
+		EquippedShield->ThrowShield();
+	}
+}
+
+void APlayerCharacter::SwapShield(AShield* ShieldToSwap)
+{
+	DropShield();
+	EquipShield(ShieldToSwap, true);
+	TraceHitItem = nullptr;
+	TraceHitItemLastFrame = nullptr;
+}
+
+AShield* APlayerCharacter::SpawnDefaultShield()
+{
+	if (DefaultShieldClass)
+	{
+		return GetWorld()->SpawnActor<AShield>(DefaultShieldClass);
+	}
+
+	return nullptr;
+}
+
+EPhysicalSurface APlayerCharacter::GetSurfaceType()
+{
+	FHitResult HitResult;
+	const FVector Start = GetActorLocation();
+	const FVector End{ Start + FVector(0.f, 0.f, -400.f) };
+	FCollisionQueryParams QueryParams;
+	QueryParams.bReturnPhysicalMaterial = true;
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility, QueryParams);
+
+	return UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
 }
 
 void APlayerCharacter::ResetPickupSoundTimer()
@@ -501,5 +587,6 @@ void APlayerCharacter::StartEquipSoundTimer()
 	GetWorldTimerManager().SetTimer(EquipSoundTimer, this, &APlayerCharacter::ResetEquipSoundTimer, EquipSoundResetTime);
 }
 
-
-
+void APlayerCharacter::Stun()
+{
+}

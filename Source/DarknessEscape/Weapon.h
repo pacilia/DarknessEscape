@@ -36,9 +36,6 @@ struct FWeaponDataTable : public FTableRowBase
 	UTexture2D* InventoryIcon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundCue* SwingSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Damage;
 };
 
@@ -71,8 +68,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
 	UDataTable* WeaponDataTable;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
-	USoundCue* SwingSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
 	float Damage;
@@ -80,8 +75,6 @@ public:
 	void ThrowWeapon();
 
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
-
-	FORCEINLINE USoundCue* GetSwingSound() const { return SwingSound; }
 
 	FORCEINLINE float GetDamage() const { return Damage; }
 };

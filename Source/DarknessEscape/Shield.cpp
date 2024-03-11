@@ -70,6 +70,7 @@ void AShield::OnConstruction(const FTransform& Transform)
 			SetItemName(ShieldDataRow->ItemName);
 			SetItemIcon(ShieldDataRow->InventoryIcon);
 
+			BlockSound = ShieldDataRow->BlockSound;
 			Defense = ShieldDataRow->Defense;
 		}
 	}
