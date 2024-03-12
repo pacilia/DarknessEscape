@@ -35,8 +35,7 @@ AEnemy::AEnemy() :
 	bCanAttack(true),
 	AttackWaitTime(1.f),
 	bDying(false),
-	DeathTime(4.f),
-	GettingHit(false)
+	DeathTime(4.f)
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -298,7 +297,11 @@ void AEnemy::OnRightWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 void AEnemy::DoDamage(APlayerCharacter* Victim)
 {
 	if (Victim == nullptr) return;
-	UGameplayStatics::ApplyDamage(Victim, BaseDamage, EnemyController, this, UDamageType::StaticClass());
+
+	if ((Victim->GetCombatState() != ECombatState::ECS_Blocking) && (Victim->GetCombatState() != ECombatState::ECS_Rolling))
+	{
+		UGameplayStatics::ApplyDamage(Victim, BaseDamage, EnemyController, this, UDamageType::StaticClass());
+	}
 
 	if (Victim->GetMeleeImpactSound())
 	{
@@ -392,17 +395,13 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AEnemy::SlashHit_Implementation(FHitResult HitResult, AActor* Player, AController* PlayerController)
 {
-	if (!GettingHit)
+	if (ImpactSound)
 	{
-		GettingHit = true;
-		if (ImpactSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
-		}
-		if (ImpactParticles)
-		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, HitResult.Location, FRotator(0.f), true);
-		}
+		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+	}
+	if (ImpactParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, HitResult.Location, FRotator(0.f), true);
 	}
 }
 
@@ -413,7 +412,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		EnemyController->GetBlackboardComponent()->SetValueAsObject(FName("Target"), DamageCauser);
 	}
 
-	if (Health - DamageAmount < 0)
+	if (Health - DamageAmount <= 0)
 	{
 		Health = 0;
 		Die();

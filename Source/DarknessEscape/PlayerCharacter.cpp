@@ -15,6 +15,11 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Sound/SoundCue.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
+#include "EnemyController.h"
+#include "Enemy.h"
+#include "EnemyController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "DarknessEscape.h"
 
 APlayerCharacter::APlayerCharacter() :
 	CombatState(ECombatState::ECS_Unoccupied),
@@ -27,7 +32,10 @@ APlayerCharacter::APlayerCharacter() :
 	bShouldPlayEquipSound(true),
 	PickupSoundResetTime(0.2f),
 	EquipSoundResetTime(0.2f),
-	StunChance(.25f)
+	StunChance(.25f),
+	Health(100.f),
+	MaxHealth(100.f),
+	bDead(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
@@ -289,7 +297,7 @@ void APlayerCharacter::BlockButtonPressed()
 
 void APlayerCharacter::BlockButtonReleased()
 {
-	if (CombatState != ECombatState::ECC_Blocking) return;
+	if (CombatState != ECombatState::ECS_Blocking) return;
 
 	EndBlock();
 }
@@ -298,7 +306,7 @@ void APlayerCharacter::Block()
 {
 	if (CombatState != ECombatState::ECS_Unoccupied) return;
 
-	CombatState = ECombatState::ECC_Blocking;
+	CombatState = ECombatState::ECS_Blocking;
 
 	if (AnimInstance && RollMontage)
 	{ 
@@ -589,4 +597,56 @@ void APlayerCharacter::StartEquipSoundTimer()
 
 void APlayerCharacter::Stun()
 {
+	if (Health <= 0.f) return;
+	CombatState = ECombatState::ECS_Stunned;
+
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+	}
+}
+
+void APlayerCharacter::EndStun()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
+}
+
+
+float APlayerCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (Health - DamageAmount <= 0.f)
+	{
+		Health = 0.f;
+		Die();
+		auto EnemyController = Cast<AEnemyController>(EventInstigator);
+		if (EnemyController)
+		{
+			EnemyController->GetBlackboardComponent()->SetValueAsBool(FName("CharacterDead"), true);
+		}
+	}
+	else
+	{
+		Health -= DamageAmount;
+	}
+	return DamageAmount;
+}
+
+void APlayerCharacter::Die()
+{
+	if (AnimInstance && DeathMontage)
+	{
+		AnimInstance->Montage_Play(DeathMontage);
+	}
+	bDead = true;
+}
+
+void APlayerCharacter::FinishDeath()
+{
+	GetMesh()->bPauseAnims = true;
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	if (PC)
+	{
+		DisableInput(PC);
+	}
 }

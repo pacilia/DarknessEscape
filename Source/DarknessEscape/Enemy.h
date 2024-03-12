@@ -219,11 +219,8 @@ public:
 
 	FORCEINLINE FString GetHeadBone() const { return HeadBone; }
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void ShowHitNumber(int32 Damage, FVector HitLocation, bool bHeadShot);
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void ShowHitNumber(int32 Damage, FVector HitLocation);
 
 	FORCEINLINE UBehaviorTree* GetBehaviorTree() const { return BehaviorTree; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-	bool GettingHit;
 };
