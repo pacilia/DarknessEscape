@@ -33,8 +33,8 @@ APlayerCharacter::APlayerCharacter() :
 	PickupSoundResetTime(0.2f),
 	EquipSoundResetTime(0.2f),
 	StunChance(.25f),
-	Health(100.f),
-	MaxHealth(100.f),
+	Health(300.f),
+	MaxHealth(300.f),
 	bDead(false)
 {
 	PrimaryActorTick.bCanEverTick = true;

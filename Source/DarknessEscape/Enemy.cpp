@@ -15,6 +15,7 @@
 #include "PlayerCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Shield.h"
 // Sets default values
 AEnemy::AEnemy() :
 	Health(100.f),
@@ -24,7 +25,7 @@ AEnemy::AEnemy() :
 	HitReactTimeMin(0.5f),
 	HitReactTimeMax(3.f),
 	HitNumberDestroyTime(1.5f),
-	StunChance(0.5f),
+	StunChance(1.f),
 	AttackLFast("AttackLFast"),
 	AttackRFast("AttackRFast"),
 	AttackL("AttackL"),
@@ -304,6 +305,7 @@ void AEnemy::DoDamage(APlayerCharacter* Victim)
 
 	if ((Victim->GetCombatState() != ECombatState::ECS_Blocking) && (Victim->GetCombatState() != ECombatState::ECS_Rolling))
 	{
+		float Damage = BaseDamage - Victim->GetEquippedShield()->GetDefense();
 		UGameplayStatics::ApplyDamage(Victim, BaseDamage, EnemyController, this, UDamageType::StaticClass());
 	}
 
