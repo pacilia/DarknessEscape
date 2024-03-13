@@ -186,14 +186,18 @@ void AEnemy::AgroSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 
 	if (Character)
 	{
+		
 		if (EnemyController)
 		{
 			if (EnemyController->GetBlackboardComponent())
 			{
 				EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
+				UE_LOG(LogTemp, Warning, TEXT("Overlap with character and enemy controller"))
 			}
 		}
+		UE_LOG(LogTemp, Warning, TEXT("Overlap with character"))
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Overlap without character"))
 }
 
 void AEnemy::CombatRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
