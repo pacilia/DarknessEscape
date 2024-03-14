@@ -193,12 +193,9 @@ void AEnemy::AgroSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 			if (EnemyController->GetBlackboardComponent())
 			{
 				EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
-				UE_LOG(LogTemp, Warning, TEXT("Overlap with character and enemy controller"))
 			}
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Overlap with character"))
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Overlap without character"))
 }
 
 void AEnemy::CombatRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -305,8 +302,9 @@ void AEnemy::DoDamage(APlayerCharacter* Victim)
 
 	if ((Victim->GetCombatState() != ECombatState::ECS_Blocking) && (Victim->GetCombatState() != ECombatState::ECS_Rolling))
 	{
-		float Damage = BaseDamage - Victim->GetEquippedShield()->GetDefense();
-		UGameplayStatics::ApplyDamage(Victim, BaseDamage, EnemyController, this, UDamageType::StaticClass());
+		float Defense = Victim->GetEquippedShield()->GetDefense();
+		float Damage = BaseDamage - Defense;
+		UGameplayStatics::ApplyDamage(Victim, Damage, EnemyController, this, UDamageType::StaticClass());
 	}
 
 	if (Victim->GetMeleeImpactSound())
