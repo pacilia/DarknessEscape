@@ -76,5 +76,7 @@ public:
 
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 
+	FORCEINLINE void SetWeaponType(EWeaponType Type) { WeaponType = Type; }
+
 	FORCEINLINE float GetDamage() const { return Damage; }
 };

@@ -132,6 +132,7 @@ protected:
 
 	void DropWeapon();
 
+	UFUNCTION(BlueprintCallable)
 	void SwapWeapon(AWeapon* WeaponToSwap);
 
 	AWeapon* APlayerCharacter::SpawnDefaultWeapon();
@@ -140,6 +141,7 @@ protected:
 
 	void DropShield();
 
+	UFUNCTION(BlueprintCallable)
 	void SwapShield(AShield* ShieldToSwap);
 
 	AShield* APlayerCharacter::SpawnDefaultShield();
@@ -147,6 +149,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	EPhysicalSurface GetSurfaceType();
 
+	UFUNCTION(BlueprintCallable)
 	void Die();
 
 	UFUNCTION(BlueprintCallable)

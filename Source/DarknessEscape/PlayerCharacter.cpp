@@ -638,6 +638,7 @@ void APlayerCharacter::Die()
 		AnimInstance->Montage_Play(DeathMontage);
 	}
 	bDead = true;
+
 }
 
 void APlayerCharacter::FinishDeath()

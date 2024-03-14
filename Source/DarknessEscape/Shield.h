@@ -83,5 +83,7 @@ public:
 
 	FORCEINLINE USoundCue* GetBlockSound() const { return BlockSound; }
 
+	FORCEINLINE void SetShieldType(EShieldType Type) { ShieldType = Type; }
+
 	FORCEINLINE float GetDefense() const { return Defense; }
 };
