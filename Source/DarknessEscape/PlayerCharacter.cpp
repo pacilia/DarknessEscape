@@ -23,7 +23,7 @@
 
 APlayerCharacter::APlayerCharacter() :
 	CombatState(ECombatState::ECS_Unoccupied),
-	RollCooldown(3.f),
+	RollCooldown(1.5f),
 	HeavyAttackCooldown(4.f),
 	bHeavyAttackOnCooldown(false),
 	bRollIsOnCooldown(false),
