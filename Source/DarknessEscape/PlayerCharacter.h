@@ -158,6 +158,11 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void EndStun();
 
+	UFUNCTION(BlueprintCallable)
+	void AddHeavyAttackDamage();
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveHeavyAttackDamage();
 public:	
 	virtual void Tick(float DeltaTime) override;
 
@@ -275,6 +280,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* HitReactMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	float HeavyAttackDamageMul;
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; };
 

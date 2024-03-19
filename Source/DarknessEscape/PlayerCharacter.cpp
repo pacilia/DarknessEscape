@@ -35,7 +35,8 @@ APlayerCharacter::APlayerCharacter() :
 	StunChance(.25f),
 	Health(300.f),
 	MaxHealth(300.f),
-	bDead(false)
+	bDead(false),
+	HeavyAttackDamageMul(1.5f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
@@ -609,6 +610,16 @@ void APlayerCharacter::Stun()
 void APlayerCharacter::EndStun()
 {
 	CombatState = ECombatState::ECS_Unoccupied;
+}
+
+void APlayerCharacter::AddHeavyAttackDamage()
+{
+	EquippedWeapon->AdjustDamage(HeavyAttackDamageMul);
+}
+
+void APlayerCharacter::RemoveHeavyAttackDamage()
+{
+	EquippedWeapon->AdjustDamage(1/HeavyAttackDamageMul);
 }
 
 

@@ -79,4 +79,6 @@ public:
 	FORCEINLINE void SetWeaponType(EWeaponType Type) { WeaponType = Type; }
 
 	FORCEINLINE float GetDamage() const { return Damage; }
+
+	FORCEINLINE void AdjustDamage(float HeavyDamageMul) { Damage *= HeavyDamageMul; }
 };
